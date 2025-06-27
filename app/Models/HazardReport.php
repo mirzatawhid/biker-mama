@@ -8,10 +8,8 @@ class HazardReport extends Model
 {
     //
     protected $fillable = [
-    'user_id',
-    'location',
-    'description',
-    'hazard_type',
+    'user_id', 'hazard_type', 'description', 'latitude', 'longitude', 'address'
 ];
+
 
 }

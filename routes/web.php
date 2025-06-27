@@ -28,6 +28,9 @@ Route::middleware(['auth'])->group(function () {
     // MY submissions
     Route::get('hazards/my', [HazardReportController::class, 'myHazards'])->name('hazards.my');
     Route::get('helps/my', [HelpRequestController::class, 'myHelps'])->name('helps.my');
+
+    Route::get('/hazards/map', [HazardReportController::class, 'mapView'])->name('hazards.map');
+
 });
 
 

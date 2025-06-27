@@ -23,6 +23,12 @@
             View ALL Hazard Reports
         </a>
 
+        <a href="{{ route('hazards.map') }}"
+        class="block text-center bg-purple-600 text-white py-3 rounded hover:bg-purple-500 transition">
+        🗺️ View Hazard Map
+        </a>
+
+
         <a href="{{ route('helps.index') }}" 
            class="block text-center bg-red-500 text-white py-3 rounded hover:bg-red-400 transition">
             View ALL Help Requests

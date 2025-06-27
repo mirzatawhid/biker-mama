@@ -11,7 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        
+        Schema::table('hazard_reports', function (Blueprint $table) {
+    $table->decimal('latitude', 10, 7)->nullable();
+    $table->decimal('longitude', 10, 7)->nullable();
+});
+
     }
 
     /**
@@ -19,6 +23,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('help_requests');
+        Schema::table('hazard_reports', function (Blueprint $table) {
+            //
+        });
     }
 };
