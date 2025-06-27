@@ -28,22 +28,25 @@ public function myHelps()
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'location' => 'required',
-            'situation' => 'required',
-            'contact_number' => 'required',
-            'urgency_level' => 'required|in:low,medium,high',
-        ]);
+{
+    $request->validate([
+        'help_type' => 'required|string',
+        'description' => 'required|string',
+        'latitude' => 'required|numeric',
+        'longitude' => 'required|numeric',
+        'address' => 'required|string',
+    ]);
 
-        HelpRequest::create([
-            'user_id' => auth()->id(),
-            'location' => $request->location,
-            'situation' => $request->situation,
-            'contact_number' => $request->contact_number,
-            'urgency_level' => $request->urgency_level,
-        ]);
+    HelpRequest::create([
+        'help_type' => $request->help_type,
+        'description' => $request->description,
+        'latitude' => $request->latitude,
+        'longitude' => $request->longitude,
+        'address' => $request->address,
+        'user_id' => auth()->id(),
+    ]);
 
-        return redirect()->route('helps.index')->with('success', 'Help request sent!');
-    }
+    return redirect()->route('dashboard')->with('success', 'Help request submitted successfully!');
+}
+
 }

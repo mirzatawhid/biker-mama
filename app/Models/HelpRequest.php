@@ -8,11 +8,12 @@ class HelpRequest extends Model
 {
     //
     protected $fillable = [
-    'user_id',
-    'location',
-    'situation',
-    'contact_number',
-    'urgency_level',
+        'user_id',
+        'help_type',
+        'description',
+        'latitude',
+        'longitude',
+        'address'
 ];
 
 }

@@ -1,37 +1,163 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="text-xl font-semibold">Request Emergency Help</h2>
+        <h2 class="font-semibold text-xl">Request Emergency Help</h2>
     </x-slot>
 
-    <div class="p-6">
-        <form action="{{ route('helps.store') }}" method="POST">
+    <div class="p-6 max-w-3xl mx-auto">
+        <form method="POST" action="{{ route('helps.store') }}">
             @csrf
 
+            <!-- Help Type -->
             <div class="mb-4">
-                <label class="block">Location</label>
-                <input type="text" name="location" class="w-full border p-2" required>
-            </div>
-
-            <div class="mb-4">
-                <label class="block">Describe the Situation</label>
-                <textarea name="situation" class="w-full border p-2" required></textarea>
-            </div>
-
-            <div class="mb-4">
-                <label class="block">Your Contact Number</label>
-                <input type="text" name="contact_number" class="w-full border p-2" required>
-            </div>
-
-            <div class="mb-4">
-                <label class="block">Urgency Level</label>
-                <select name="urgency_level" class="w-full border p-2" required>
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
+                <label class="block font-medium">Type of Emergency</label>
+                <select name="help_type" class="w-full border p-2 rounded" required>
+                    <option value="breakdown">Bike Breakdown</option>
+                    <option value="accident">Accident</option>
+                    <option value="lost">Lost</option>
+                    <option value="other">Other</option>
                 </select>
             </div>
 
-            <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded">Send Help Request</button>
+            <!-- Description -->
+            <div class="mb-4">
+                <label class="block font-medium">Description</label>
+                <textarea name="description" class="w-full border p-2 rounded" required></textarea>
+            </div>
+
+            <!-- Address Autocomplete
+            <div class="mb-4 relative z-50">
+                <label class="block font-medium">Search Address</label>
+                <input type="text" id="autocomplete"
+                    placeholder="Start typing location..."
+                    class="w-full border p-2 rounded"
+                    autocomplete="off">
+                <div id="suggestions"
+                    class="absolute bg-white border rounded shadow mt-1 hidden w-full max-h-40 overflow-y-auto z-50">
+                </div>
+            </div> -->
+
+
+
+            <!-- Map -->
+            <div class="mb-4">
+                <label class="block font-medium mb-2">Choose Location on Map</label>
+                <div id="map" class="rounded border" style="height: 350px;"></div>
+                <button type="button" id="gpsBtn"
+                        class="mt-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-500">
+                    📍 Use My Current Location
+                </button>
+            </div>
+
+            <!-- Address (auto-filled) -->
+            <div class="mb-4">
+                <label class="block font-medium">Address</label>
+                <input type="text" name="address" id="address" class="w-full border p-2 rounded" readonly required>
+            </div>
+
+            <!-- Hidden Lat/Lng -->
+            <input type="hidden" name="latitude" id="latitude" required>
+            <input type="hidden" name="longitude" id="longitude" required>
+
+            <button type="submit" class="bg-red-700 text-white px-4 py-2 rounded">
+                🚨 Submit Emergency Help Request
+            </button>
         </form>
     </div>
+
+    <!-- Leaflet & Geocoder -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+    <script>
+        let marker;
+        const map = L.map('map').setView([23.8103, 90.4125], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        function setMarkerAndAddress(lat, lng, display_name = null) {
+            if (marker) {
+                marker.setLatLng([lat, lng]);
+            } else {
+                marker = L.marker([lat, lng]).addTo(map);
+            }
+
+            document.getElementById('latitude').value = lat;
+            document.getElementById('longitude').value = lng;
+
+            if (display_name) {
+                document.getElementById('address').value = display_name;
+            } else {
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        document.getElementById('address').value = data.display_name || 'Unknown address';
+                    });
+            }
+        }
+
+        map.on('click', function (e) {
+            const { lat, lng } = e.latlng;
+            setMarkerAndAddress(lat, lng);
+        });
+
+        document.getElementById('gpsBtn').addEventListener('click', () => {
+            if (!navigator.geolocation) return alert('Geolocation not supported.');
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    map.setView([lat, lng], 15);
+                    setMarkerAndAddress(lat, lng);
+                },
+                () => alert('Unable to retrieve location.')
+            );
+        });
+
+        // Address Autocomplete
+        const autocomplete = document.getElementById('autocomplete');
+        const suggestionsBox = document.getElementById('suggestions');
+        let debounceTimer;
+
+        autocomplete.addEventListener('input', () => {
+            const query = autocomplete.value.trim();
+            clearTimeout(debounceTimer);
+
+            if (query.length < 3) {
+                suggestionsBox.classList.add('hidden');
+                return;
+            }
+
+            debounceTimer = setTimeout(() => {
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5`)
+                    .then(res => res.json())
+                    .then(results => {
+                        suggestionsBox.innerHTML = '';
+                        results.forEach(result => {
+                            const option = document.createElement('div');
+                            option.textContent = result.display_name;
+                            option.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer';
+                            option.addEventListener('click', () => {
+                                autocomplete.value = result.display_name;
+                                suggestionsBox.classList.add('hidden');
+                                const lat = parseFloat(result.lat);
+                                const lon = parseFloat(result.lon);
+                                map.setView([lat, lon], 15);
+                                setMarkerAndAddress(lat, lon, result.display_name);
+                            });
+                            suggestionsBox.appendChild(option);
+                        });
+                        suggestionsBox.classList.remove('hidden');
+                    });
+            }, 300);
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!autocomplete.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                suggestionsBox.classList.add('hidden');
+            }
+        });
+    </script>
 </x-app-layout>
